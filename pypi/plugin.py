@@ -1,54 +1,45 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: t -*-
 
-import os
-import io
-import gzip
+import sys
 import time
-import certifi
+import json
 import subprocess
-import lxml.html
-import urllib.request
 
 
 def run():
-    # download
-    url = "https://mirrors.tuna.tsinghua.edu.cn/aosp-monthly/aosp-latest.tar"
-    dstFile = os.path.join(api.get_data_dir(), "aosp-latest.tar")
-    logFile = os.path.join(api.get_log_dir(), "wget.log")
-    _Util.shellCall("/usr/bin/wget -c -O \"%s\" \"%s\" >\"%s\" 2>&1" % (dstFile, url, logFile))
+    args = json.loads(sys.argv[1])
+    dataDir = args["data-directory"]
 
-    # clear directory
-    for fn in os.listdir(api.get_data_dir()):
-        fullfn = os.path.join(api.get_data_dir(), fn)
-        if fullfn != dstFile:
-            _Util.forceDelete(fullfn)
+    # from https://github.com/tuna/tunasync-scripts/blob/master/pypi.sh
+    url = "https://pypi.org"
+    with open("/tmp/bandersnatch.conf", "w") as f:
+        buf = ""
+        buf += "[mirror]\n"
+        buf += "directory = %s\n" % (dataDir)
+        buf += "master = %s\n" % (url)
+        buf += "json = true\n"
+        buf += "timeout = 300\n"
+        buf += "workers = 5\n"
+        buf += "hash-index = false\n"
+        buf += "stop-on-error = false\n"
+        buf += "delete-packages = true\n"
+        buf += "[plugins]\n"
+        buf += "enabled =\n"
+        buf += "    blacklist_project\n"
+        buf += "[blacklist]\n"
+        buf += "packages =\n"
+        buf += "    tf-nightly-gpu\n"
+        buf += "	tf-nightly\n"
+        buf += "	tensorflow-io-nightly\n"
+        buf += "	tf-nightly-cpu\n"
+        buf += "    pyagrum-nightly\n"
+        f.write(buf)
 
-    # extract
-    _Util.shellCall("/bin/tar -x -C \"%s\" -f \"%s\"" % (api.get_data_dir(), dstFile))
-    _Util.forceDelete(dstFile)
+    subprocess.run(["/usr/bin/bandersnatch", "-c", "/tmp/bandersnatch.conf", "mirror"])
 
 
-class _Util:
-
-    @staticmethod
-    def getWebPageElementTree(url):
-        for i in range(0, 3):
-            try:
-                resp = urllib.request.urlopen(url, timeout=60, cafile=certifi.where())
-                if resp.info().get('Content-Encoding') is None:
-                    fakef = resp
-                elif resp.info().get('Content-Encoding') == 'gzip':
-                    fakef = io.BytesIO(resp.read())
-                    fakef = gzip.GzipFile(fileobj=fakef)
-                else:
-                    assert False
-                return lxml.html.parse(fakef)
-            except urllib.error.URLError as e:
-                if isinstance(e.reason, TimeoutError):
-                    pass                                # retry 3 times
-                else:
-                    raise
+class Util:
 
     @staticmethod
     def shellCall(cmd):
@@ -63,14 +54,6 @@ class _Util:
         if ret.returncode != 0:
             ret.check_returncode()
         return ret.stdout.rstrip()
-
-    @staticmethod
-    def shellCallWithRetCode(cmd):
-        ret = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                             shell=True, universal_newlines=True)
-        if ret.returncode > 128:
-            time.sleep(1.0)
-        return (ret.returncode, ret.stdout.rstrip())
 
 
 if __name__ == "__main__":

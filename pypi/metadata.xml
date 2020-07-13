@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin id="pypi">
-  <file-mirror id="pypi">
+  <mirror-site id="pypi">
     <name>PyPI</name>
-    <data-directory>pypi</data-directory>
+    <advertiser>
+      <interface>file:http</interface>
+      <interface>file:ftp</interface>
+    </advertiser>
     <initializer>
       <executable>update.py</executable>
     </initializer>
@@ -10,9 +13,5 @@
       <executable>update.py</executable>
       <cron-expression>0 0 * * 0</cron-expression>
     </updater>
-    <advertiser>
-      <protocol>http</protocol>
-      <protocol>ftp</protocol>
-    </advertiser>
-  </file-mirror>
+  </mirror-site>
 </plugin>
