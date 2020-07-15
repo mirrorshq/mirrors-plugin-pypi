@@ -11,7 +11,7 @@
     </initializer>
     <updater>
       <executable>update.py</executable>
-      <cron-expression>0 0 * * 0</cron-expression>
+      <cron-expression>0 4 * * *</cron-expression>
     </updater>
   </mirror-site>
 </plugin>
