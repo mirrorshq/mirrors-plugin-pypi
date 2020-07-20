@@ -9,7 +9,7 @@ import subprocess
 
 def run():
     args = json.loads(sys.argv[1])
-    dataDir = args["data-directory"]
+    dataDir = args["storage-file"]["data-directory"]
 
     # from https://github.com/tuna/tunasync-scripts/blob/master/pypi.sh
     url = "https://pypi.org"
