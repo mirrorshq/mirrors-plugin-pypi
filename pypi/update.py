@@ -1,15 +1,29 @@
 #!/usr/bin/python3
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: t -*-
 
+import os
 import sys
 import time
 import json
+import certifi
+import lxml.html
+import urllib.request
 import subprocess
+from datetime import datetime
+from datetime import timedelta
 
 
 def run():
     args = json.loads(sys.argv[1])
+    stateDir = args["state-directory"]
     dataDir = args["storage-file"]["data-directory"]
+
+    # big projects
+    bpm = BigProjectManager(os.path.join(stateDir, "big-projects.json"))
+    print("Find big projects:")
+    for p in bpm.getProjectList():
+        print("    %s" % (p))
+    print("")
 
     # from https://github.com/tuna/tunasync-scripts/blob/master/pypi.sh
     url = "https://pypi.org"
@@ -29,14 +43,53 @@ def run():
         buf += "    blacklist_project\n"
         buf += "[blacklist]\n"
         buf += "packages =\n"
-        buf += "    tf-nightly-gpu\n"
-        buf += "	tf-nightly\n"
-        buf += "	tensorflow-io-nightly\n"
-        buf += "	tf-nightly-cpu\n"
-        buf += "    pyagrum-nightly\n"
+        for p in bpm.getProjectList():
+            buf += "    %s\n" % (p)
         f.write(buf)
 
     subprocess.run(["/usr/bin/bandersnatch", "-c", "/tmp/bandersnatch.conf", "mirror"])
+
+
+class BigProjectManager:
+
+    def __init__(self, recordFile):
+        statsUrl = "https://pypi.org/stats"
+        now = datetime.now()
+
+        self.recordFile = recordFile
+        self.dataObj = self._parseRecordFile()
+
+        # read top 100 projects based on the sum of their packages' sizes
+        resp = urllib.request.urlopen(statsUrl, timeout=60, cafile=certifi.where())
+        root = lxml.html.parse(resp)
+        i = 0
+        for tr in root.xpath(".//table/tbody/tr"):
+            # igonre the first line
+            if i == 0:
+                continue
+            thTag = tr.xpath("./th")[0]
+            self.dataObj[thTag.text] = now
+            i += 1
+
+        # remove projects that are not on list for 1 year
+        for packageName, lastUpdateTime in self.dataObj.items():
+            if now - lastUpdateTime > timedelta(years=1):
+                del self.dataObj[packageName]
+
+        self._saveRecordFile(self.dataObj)
+
+    def getProjectList(self):
+        return list(self.dataObj.keys())
+
+    def _parseRecordFile(self):
+        if os.path.exists(self.recordFile):
+            with open(self.recordFile, "r") as f:
+                return json.load(f)
+        return {}
+
+    def _saveRecordFile(self, dataObj):
+        with open(self.recordFile, "w") as f:
+            json.dump(f, dataObj)
 
 
 class Util:
