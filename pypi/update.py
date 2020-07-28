@@ -19,9 +19,9 @@ def run():
     dataDir = args["storage-file"]["data-directory"]
 
     # big projects
-    bpm = BigProjectManager(os.path.join(stateDir, "big-projects.json"))
-    print("Find big projects:")
-    for p in bpm.getProjectList():
+    bigProjectList = _getBigProjectList(os.path.join(stateDir, "big-projects.json"))
+    print("Find %d big projects:" % len(bigProjectList))
+    for p in bigProjectList:
         print("    %s" % (p))
     print("")
 
@@ -43,53 +43,45 @@ def run():
         buf += "    blacklist_project\n"
         buf += "[blacklist]\n"
         buf += "packages =\n"
-        for p in bpm.getProjectList():
+        for p in bigProjectList:
             buf += "    %s\n" % (p)
         f.write(buf)
 
     subprocess.run(["/usr/bin/bandersnatch", "-c", "/tmp/bandersnatch.conf", "mirror"])
 
 
-class BigProjectManager:
+def _getBigProjectList(self, recordFile):
+    statsUrl = "https://pypi.org/stats"
+    now = datetime.now()
 
-    def __init__(self, recordFile):
-        statsUrl = "https://pypi.org/stats"
-        now = datetime.now()
+    # read data
+    dataObj = dict()
+    if os.path.exists(recordFile):
+        with open(recordFile, "r") as f:
+            dataObj = json.load(f)
 
-        self.recordFile = recordFile
-        self.dataObj = self._parseRecordFile()
+    # read top 100 projects based on the sum of their packages' sizes
+    resp = urllib.request.urlopen(statsUrl, timeout=60, cafile=certifi.where())
+    root = lxml.html.parse(resp)
+    i = 0
+    for tr in root.xpath(".//table/tbody/tr"):
+        # igonre the first line
+        if i == 0:
+            continue
+        thTag = tr.xpath("./th")[0]
+        dataObj[thTag.text] = now
+        i += 1
 
-        # read top 100 projects based on the sum of their packages' sizes
-        resp = urllib.request.urlopen(statsUrl, timeout=60, cafile=certifi.where())
-        root = lxml.html.parse(resp)
-        i = 0
-        for tr in root.xpath(".//table/tbody/tr"):
-            # igonre the first line
-            if i == 0:
-                continue
-            thTag = tr.xpath("./th")[0]
-            self.dataObj[thTag.text] = now
-            i += 1
+    # remove projects that are not on list for 1 year
+    for packageName, lastUpdateTime in dataObj.items():
+        if now - lastUpdateTime > timedelta(years=1):
+            del dataObj[packageName]
 
-        # remove projects that are not on list for 1 year
-        for packageName, lastUpdateTime in self.dataObj.items():
-            if now - lastUpdateTime > timedelta(years=1):
-                del self.dataObj[packageName]
+    # save data
+    with open(recordFile, "w") as f:
+        json.dump(f, dataObj)
 
-        self._saveRecordFile(self.dataObj)
-
-    def getProjectList(self):
-        return list(self.dataObj.keys())
-
-    def _parseRecordFile(self):
-        if os.path.exists(self.recordFile):
-            with open(self.recordFile, "r") as f:
-                return json.load(f)
-        return {}
-
-    def _saveRecordFile(self, dataObj):
-        with open(self.recordFile, "w") as f:
-            json.dump(f, dataObj)
+    return list(dataObj.keys())
 
 
 class Util:
