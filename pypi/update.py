@@ -50,7 +50,7 @@ def run():
     subprocess.run(["/usr/bin/bandersnatch", "-c", "/tmp/bandersnatch.conf", "mirror"])
 
 
-def _getBigProjectList(self, recordFile):
+def _getBigProjectList(recordFile):
     statsUrl = "https://pypi.org/stats"
     now = datetime.now()
 
@@ -58,29 +58,31 @@ def _getBigProjectList(self, recordFile):
     dataObj = dict()
     if os.path.exists(recordFile):
         with open(recordFile, "r") as f:
-            dataObj = json.load(f)
+            buf = f.read()
+            if buf != "":
+                dataObj = json.loads(buf)
+                for k in dataObj:
+                    dataObj[k] = datetime.strptime(dataObj[k], "%Y.%m.%d")
 
     # read top 100 projects based on the sum of their packages' sizes
     resp = urllib.request.urlopen(statsUrl, timeout=60, cafile=certifi.where())
     root = lxml.html.parse(resp)
-    i = 0
-    for tr in root.xpath(".//table/tbody/tr"):
-        # igonre the first line
-        if i == 0:
-            continue
+    for tr in root.xpath(".//table/tbody/tr")[1:]:      # ignore the first line
         thTag = tr.xpath("./th")[0]
         dataObj[thTag.text] = now
-        i += 1
 
     # remove projects that are not on list for 1 year
     for packageName, lastUpdateTime in dataObj.items():
-        if now - lastUpdateTime > timedelta(years=1):
+        if now - lastUpdateTime > timedelta(days=365):
             del dataObj[packageName]
 
     # save data
     with open(recordFile, "w") as f:
-        json.dump(f, dataObj)
+        for k in dataObj:
+            dataObj[k] = dataObj[k].strftime("%Y.%m.%d")
+        json.dump(dataObj, f)
 
+    # return value
     return list(dataObj.keys())
 
 
