@@ -47,7 +47,8 @@ def run():
             buf += "    %s\n" % (p)
         f.write(buf)
 
-    subprocess.run(["/usr/bin/bandersnatch", "-c", "/tmp/bandersnatch.conf", "mirror"])
+    # it sucks that aiohttp depends on "~/.netrc", so we disable it
+    subprocess.run(["/usr/bin/bandersnatch", "-c", "/tmp/bandersnatch.conf", "mirror"], env={"NETRC": "/dev/null"})
 
 
 def _getBigProjectList(recordFile):
