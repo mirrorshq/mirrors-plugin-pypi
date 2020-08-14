@@ -15,7 +15,7 @@ from datetime import timedelta
 
 def run():
     args = json.loads(sys.argv[1])
-    stateDir = args["master-directory"]
+    stateDir = args["state-directory"]
     dataDir = args["storage-file"]["data-directory"]
 
     # big projects
