@@ -2,7 +2,7 @@
 <plugin id="pypi">
   <mirror-site id="pypi">
     <name>PyPI</name>
-    <storage>file</storage>
+    <storage type="file"></storage>
     <advertiser>
       <interface>file:http</interface>
     </advertiser>
