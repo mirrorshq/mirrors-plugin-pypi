@@ -2,10 +2,8 @@
 <plugin id="pypi">
   <mirror-site id="pypi">
     <name>PyPI</name>
-    <storage type="file"></storage>
-    <advertiser>
-      <interface>file:http</interface>
-    </advertiser>
+    <storage type="file"/>
+    <advertiser type="http"/>
     <initializer>
       <executable>update.py</executable>
     </initializer>
