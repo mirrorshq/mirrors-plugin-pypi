@@ -3,7 +3,7 @@
   <mirror-site id="pypi">
     <name>PyPI</name>
     <storage type="file"/>
-    <advertiser type="http"/>
+    <advertiser type="httpdir"/>
     <initializer>
       <executable>update.py</executable>
     </initializer>
