@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<plugin id="pypi">
-  <mirror-site id="pypi">
-    <name>PyPI</name>
-    <storage type="file"/>
-    <advertiser type="httpdir"/>
-    <initializer>
-      <executable>update.py</executable>
-    </initializer>
-    <updater>
-      <executable>update.py</executable>
-      <schedule type="interval">1d</schedule>
-    </updater>
-  </mirror-site>
-</plugin>
+<mirror-site id="pypi">
+  <name>PyPI</name>
+  <storage type="file"/>
+  <advertiser type="httpdir"/>
+  <initializer>
+    <executable>update.py</executable>
+  </initializer>
+  <updater>
+    <executable>update.py</executable>
+    <schedule type="interval">1d</schedule>
+  </updater>
+</mirror-site>
