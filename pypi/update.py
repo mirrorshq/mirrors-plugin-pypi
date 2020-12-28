@@ -2,21 +2,20 @@
 # -*- coding: utf-8; tab-width: 4; indent-tabs-mode: t -*-
 
 import os
-import sys
 import time
 import json
 import certifi
 import lxml.html
-import urllib.request
 import subprocess
+import urllib.request
+import mirrors.plugin
 from datetime import datetime
 from datetime import timedelta
 
 
 def run():
-    args = json.loads(sys.argv[1])
-    stateDir = args["state-directory"]
-    dataDir = args["storage-file"]["data-directory"]
+    stateDir = mirrors.plugin.params["state-directory"]
+    dataDir = mirrors.plugin.params["storage-file"]["data-directory"]
 
     # big projects
     bigProjectList = _getBigProjectList(os.path.join(stateDir, "big-projects.json"))
